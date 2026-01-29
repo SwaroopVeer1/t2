@@ -1,0 +1,6 @@
+torch==2.2.0
+diffusers[torch]==1.28.0
+transformers==4.33.2
+accelerate==0.22.0
+xformers==0.0.22
+Pillow==10.1.0
