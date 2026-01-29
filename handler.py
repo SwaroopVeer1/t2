@@ -1,14 +1,13 @@
 import os
 import base64
 from io import BytesIO
-
 import torch
 from diffusers import StableDiffusionPipeline
 import runpod
 
 print("Loading Stable Diffusion...")
 
-# Load model at startup
+# Load the model at startup
 model_id = "CompVis/stable-diffusion-v1-4"
 pipe = StableDiffusionPipeline.from_pretrained(
     model_id,
@@ -18,25 +17,25 @@ pipe = pipe.to("cuda" if torch.cuda.is_available() else "cpu")
 print("Model loaded.")
 
 def generate_image(prompt: str, width: int = 512, height: int = 512, steps: int = 20) -> str:
+    """Generate an image and return it as Base64 string."""
     with torch.autocast("cuda"):
         result = pipe(
             prompt=prompt,
-            height=height,
             width=width,
+            height=height,
             num_inference_steps=steps
         )
     img = result.images[0]
-
     buffer = BytesIO()
     img.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
 def handler(event):
     """
-    Expects JSON like:
+    Expected JSON input:
     {
         "input": {
-            "prompt": "A futuristic city at sunset",
+            "prompt": "A cute cartoon robot",
             "width": 512,
             "height": 512,
             "steps": 20
