@@ -1,4 +1,3 @@
-import os
 import base64
 from io import BytesIO
 import torch
@@ -6,7 +5,7 @@ from diffusers import StableDiffusionPipeline
 import runpod
 
 # ------------------------------
-# Load the Stable Diffusion model once at startup
+# Load the Stable Diffusion model at runtime (GPU required)
 # ------------------------------
 print("Loading Stable Diffusion model...")
 model_id = "CompVis/stable-diffusion-v1-4"
@@ -40,17 +39,6 @@ def generate_image(prompt: str, width: int = 512, height: int = 512, steps: int 
 # Serverless handler
 # ------------------------------
 def handler(event):
-    """
-    Expected input JSON:
-    {
-        "input": {
-            "prompt": "Flying cars over a futuristic city",
-            "width": 512,
-            "height": 512,
-            "steps": 20
-        }
-    }
-    """
     input_data = event.get("input", {})
 
     prompt = input_data.get("prompt", "A beautiful landscape")
