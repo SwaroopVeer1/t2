@@ -1,66 +1,58 @@
+# handler.py
 import os
+import io
 import base64
-from io import BytesIO
 import torch
 from diffusers import StableDiffusionPipeline
-import runpod
+from PIL import Image
 
-print("Loading Stable Diffusion...")
+# Create image folder
+os.makedirs("img", exist_ok=True)
 
-# Load the model at startup
-model_id = "CompVis/stable-diffusion-v1-4"
+# Load model once when the container starts
+print("Loading Stable Diffusion model...")
 pipe = StableDiffusionPipeline.from_pretrained(
-    model_id,
+    "runwayml/stable-diffusion-v1-5",
     torch_dtype=torch.float16
 )
-pipe = pipe.to("cuda" if torch.cuda.is_available() else "cpu")
+pipe.enable_model_cpu_offload()
 print("Model loaded.")
 
-def generate_image(prompt: str, width: int = 512, height: int = 512, steps: int = 20) -> str:
-    """Generate an image and return it as Base64 string."""
-    with torch.autocast("cuda"):
-        result = pipe(
-            prompt=prompt,
-            width=width,
-            height=height,
-            num_inference_steps=steps
-        )
-    img = result.images[0]
-    buffer = BytesIO()
-    img.save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-def handler(event):
+def handler(event, context):
     """
-    Expected JSON input:
-    {
-        "input": {
-            "prompt": "A cute cartoon robot",
-            "width": 512,
-            "height": 512,
-            "steps": 20
-        }
-    }
+    RunPod serverless handler.
+    Expects JSON: {"prompt": "Your text prompt here"}
+    Returns base64 PNG image.
     """
-    input_data = event.get("input", {})
-    prompt = input_data.get("prompt", "A serene landscape at sunrise")
-    width = input_data.get("width", 512)
-    height = input_data.get("height", 512)
-    steps = input_data.get("steps", 20)
-
     try:
-        image_b64 = generate_image(prompt, width, height, steps)
-        return {
-            "output": {
-                "image": image_b64,
-                "prompt": prompt,
-                "width": width,
-                "height": height,
-                "steps": steps
-            }
-        }
-    except Exception as e:
-        return {"error": str(e)}
+        # Extract prompt
+        prompt = event.get("prompt", "")
+        if not prompt:
+            return {"statusCode": 400, "body": "Error: 'prompt' is required."}
 
-if __name__ == "__main__":
-    runpod.serverless.start({"handler": handler})
+        # Generate image
+        image = pipe(
+            prompt,
+            height=512,
+            width=512,
+            guidance_scale=7.5,
+            num_inference_steps=30,
+            generator=torch.Generator("cpu").manual_seed(0)
+        ).images[0]
+
+        # Save locally (optional)
+        image_path = os.path.join("img", "generated.png")
+        image.save(image_path)
+
+        # Convert to base64
+        buffered = io.BytesIO()
+        image.save(buffered, format="PNG")
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+        return {
+            "statusCode": 200,
+            "body": {"image_base64": img_str}
+        }
+
+    except Exception as e:
+        return {"statusCode": 500, "body": str(e)}
