@@ -1,58 +1,32 @@
-# handler.py
-import os
-import io
 import base64
+from io import BytesIO
 import torch
 from diffusers import StableDiffusionPipeline
 from PIL import Image
 
-# Create image folder
-os.makedirs("img", exist_ok=True)
+# Use your exact model loading code
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Load model once when the container starts
-print("Loading Stable Diffusion model...")
 pipe = StableDiffusionPipeline.from_pretrained(
     "runwayml/stable-diffusion-v1-5",
-    torch_dtype=torch.float16
+    torch_dtype=torch.float16 if device == "cuda" else torch.float32
 )
-pipe.enable_model_cpu_offload()
-print("Model loaded.")
+pipe = pipe.to(device)
 
 def handler(event, context):
     """
-    RunPod serverless handler.
-    Expects JSON: {"prompt": "Your text prompt here"}
-    Returns base64 PNG image.
+    Serverless handler that accepts JSON {"prompt": "..."} and returns base64 PNG image.
     """
-    try:
-        # Extract prompt
-        prompt = event.get("prompt", "")
-        if not prompt:
-            return {"statusCode": 400, "body": "Error: 'prompt' is required."}
+    prompt = event.get("prompt", "")
+    if not prompt:
+        return {"error": "No prompt provided"}
 
-        # Generate image
-        image = pipe(
-            prompt,
-            height=512,
-            width=512,
-            guidance_scale=7.5,
-            num_inference_steps=30,
-            generator=torch.Generator("cpu").manual_seed(0)
-        ).images[0]
+    print(f"Generating image for prompt: {prompt} ... (this may take a while)")
+    image = pipe(prompt).images[0]
 
-        # Save locally (optional)
-        image_path = os.path.join("img", "generated.png")
-        image.save(image_path)
+    # Convert to base64
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        # Convert to base64
-        buffered = io.BytesIO()
-        image.save(buffered, format="PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-        return {
-            "statusCode": 200,
-            "body": {"image_base64": img_str}
-        }
-
-    except Exception as e:
-        return {"statusCode": 500, "body": str(e)}
+    return {"image_base64": img_str}
