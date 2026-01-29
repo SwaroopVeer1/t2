@@ -1,17 +1,20 @@
-# Use official PyTorch image with CUDA support
-FROM pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime
+# Dockerfile
+FROM python:3.10-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y git-lfs && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git gcc libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
 
-# Install Python packages
-RUN pip install --upgrade pip
-RUN pip install diffusers transformers accelerate pillow runpod
-
-# Copy handler
-COPY handler.py /app/handler.py
+# Set working directory
 WORKDIR /app
 
-# Run the handler
-CMD ["python", "handler.py"]
-###
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy handler
+COPY handler.py .
+
+# Expose RunPod handler
+CMD ["handler.handler"]
