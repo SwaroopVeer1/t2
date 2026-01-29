@@ -6,7 +6,7 @@ from diffusers import StableDiffusionPipeline
 import runpod
 
 # ------------------------------
-# Load the Stable Diffusion Model once at startup
+# Load the Stable Diffusion model once at startup
 # ------------------------------
 print("Loading Stable Diffusion model...")
 model_id = "CompVis/stable-diffusion-v1-4"
