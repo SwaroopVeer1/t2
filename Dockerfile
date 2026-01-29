@@ -1,7 +1,7 @@
-# Use NVIDIA PyTorch runtime for GPU support
+# Use PyTorch image with CUDA support
 FROM pytorch/pytorch:2.2.0-cuda11.8-cudnn8-runtime
 
-# Install system dependencies
+# Install system tools
 RUN apt-get update && apt-get install -y git-lfs && rm -rf /var/lib/apt/lists/*
 
 # Install Python packages
@@ -12,5 +12,4 @@ RUN pip install diffusers transformers accelerate runpod
 COPY handler.py /app/handler.py
 WORKDIR /app
 
-# Start the serverless handler
 CMD ["python", "handler.py"]
