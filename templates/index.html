@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stable Diffusion Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        input[type=text] { width: 400px; padding: 10px; }
+        input[type=submit] { padding: 10px 20px; }
+        img { margin-top: 20px; max-width: 80%; }
+    </style>
+</head>
+<body>
+    <h1>Stable Diffusion Image Generator</h1>
+    <form method="post">
+        <input type="text" name="prompt" placeholder="Enter prompt..." value="{{ prompt }}">
+        <input type="submit" value="Generate">
+    </form>
+    {% if image_data %}
+        <h2>Generated Image:</h2>
+        <img src="data:image/png;base64,{{ image_data }}">
+    {% endif %}
+</body>
+</html>
