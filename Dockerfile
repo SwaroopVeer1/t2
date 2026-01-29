@@ -18,3 +18,4 @@ COPY handler.py .
 
 # Expose RunPod handler
 CMD ["handler.handler"]
+##
